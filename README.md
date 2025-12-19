@@ -10,9 +10,7 @@ Client-side LEGO investment tracker built with **React**, **Vite**, and **Tailwi
 - Purchase/current price tracking with delta + ROI% calculations.
 - BrickLink image thumbnails and “Open on BrickLink” links (generated from `setId`).
 - Notes and comma-separated tags per set.
-- Add new sets (ID-only required, with live BrickLink preview and validation).
-- Delete sets from the table or detail panel (with confirmation).
-- XLSX import (SheetJS) with duplicate skipping and summary modal.
+- Add new sets (validates ID format and prevents duplicates).
 - Local persistence via `localStorage` plus starter data in `src/data/seedSets.js`.
 
 ## Getting Started
@@ -22,12 +20,6 @@ npm run dev
 ```
 
 Then open the printed local URL (usually `http://localhost:5173`).
-
-### Importing XLSX
-- Click **Import XLSX** and choose a `.xlsx`/`.xls` file.
-- The first sheet is read; accepted headers for set IDs (case-insensitive): `setId`, `set_id`, `set`, `set #`, `set#`, `set number`, `set_number`.
-- Rows missing a set ID are skipped; numeric IDs are auto-converted to `####-1`.
-- Duplicates are skipped. A summary modal reports imported / duplicate / invalid counts.
 
 ## Project Structure
 - `src/App.jsx` – Main layout, state, persistence, filtering, sorting.
