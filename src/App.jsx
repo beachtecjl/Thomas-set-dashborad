@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import * as XLSX from 'xlsx';
 import SearchBar from './components/SearchBar';
 import SetTable from './components/SetTable';
 import SetDetail from './components/SetDetail';
 import AddSetModal from './components/AddSetModal';
+import ConfirmModal from './components/ConfirmModal';
+import ImportSummaryModal from './components/ImportSummaryModal';
 import seedSets from './data/seedSets';
 
 const STORAGE_KEY = 'lego-set-dashboard-data';
@@ -16,6 +19,8 @@ const computeMetrics = (set) => {
 
 const normalizeSet = (set) => ({
   ...set,
+  name: set.name || '',
+  theme: set.theme || '',
   purchasePrice: Number(set.purchasePrice) || 0,
   currentPrice: Number(set.currentPrice) || 0,
   rankA: Number(set.rankA) || 0,
@@ -51,6 +56,9 @@ function App() {
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState('score');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [importSummary, setImportSummary] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -127,6 +135,20 @@ function App() {
     setIsAddModalOpen(false);
   };
 
+  const handleDeleteSet = (setId) => {
+    if (!setId) return;
+
+    if (selectedId === setId) {
+      const visibleIds = filteredSets.map((s) => s.setId);
+      const idx = visibleIds.indexOf(setId);
+      const nextId = visibleIds[idx + 1] ?? visibleIds[idx - 1] ?? null;
+      setSelectedId(nextId || null);
+    }
+
+    setSets((prev) => prev.filter((item) => item.setId !== setId));
+    setDeleteTarget(null);
+  };
+
   const handleRemoveMissingSelection = () => {
     if (selectedId && !sets.find((s) => s.setId === selectedId)) {
       setSelectedId(sets[0]?.setId || null);
@@ -136,6 +158,132 @@ function App() {
   useEffect(() => {
     handleRemoveMissingSelection();
   }, [sets]);
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const extractSetId = (row) => {
+    if (!row || typeof row !== 'object') return null;
+    const candidates = ['setid', 'set_id', 'set', 'set #', 'set#', 'set number', 'set_number'];
+    for (const [key, value] of Object.entries(row)) {
+      const normalizedKey = key?.toString().trim().toLowerCase();
+      if (candidates.includes(normalizedKey)) {
+        if (value === null || value === undefined) return null;
+        let raw = value;
+        if (typeof raw === 'number') raw = raw.toString();
+        raw = String(raw).trim();
+        if (!raw) return null;
+        if (/^\d+$/.test(raw)) {
+          return `${raw}-1`;
+        }
+        return raw;
+      }
+    }
+    return null;
+  };
+
+  const extractRank = (row, columnNames) => {
+    for (const name of columnNames) {
+      const candidate = row[name];
+      if (candidate === undefined || candidate === null || candidate === '') continue;
+      const num = Number(candidate);
+      if (Number.isFinite(num)) return Math.round(num);
+    }
+    return 0;
+  };
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const firstSheet = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheet];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      const existingIds = new Set(sets.map((s) => s.setId));
+      const added = [];
+      let duplicates = 0;
+      let invalid = 0;
+
+      rows.forEach((row) => {
+        const setId = extractSetId(row);
+        if (!setId) {
+          invalid += 1;
+          return;
+        }
+        const normalizedId = setId.trim();
+        const isValidPattern = /^\d{4,7}-\d+$/.test(normalizedId);
+        if (!isValidPattern) {
+          invalid += 1;
+          return;
+        }
+        if (existingIds.has(normalizedId)) {
+          duplicates += 1;
+          return;
+        }
+
+        const rankA = extractRank(row, ['1', 'a', 'ranka', 'rank_a']);
+        const rankB = extractRank(row, ['2', 'b', 'rankb', 'rank_b']);
+        const rankC = extractRank(row, ['3', 'c', 'rankc', 'rank_c']);
+        const rankD = extractRank(row, ['4', 'd', 'rankd', 'rank_d']);
+
+        existingIds.add(normalizedId);
+        const newSet = normalizeSet({
+          setId: normalizedId,
+          name: '',
+          theme: '',
+          year: null,
+          purchasePrice: 0,
+          currentPrice: 0,
+          rankA,
+          rankB,
+          rankC,
+          rankD,
+          notes: '',
+          tags: [],
+        });
+        added.push(newSet);
+      });
+
+      if (added.length) {
+        setSets((prev) => [...added, ...prev]);
+        if (!selectedId) {
+          setSelectedId(added[0].setId);
+        }
+      }
+
+      setImportSummary({
+        imported: added.length,
+        duplicates,
+        invalid,
+      });
+    } catch (error) {
+      setImportSummary({
+        imported: 0,
+        duplicates: 0,
+        invalid: 0,
+        error: 'Failed to import file. Please check the format.',
+      });
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const detailContent = selectedSet ? (
+    <SetDetail
+      set={selectedSet}
+      onChange={handleUpdateSet}
+      onDelete={() => setDeleteTarget(selectedSet)}
+    />
+  ) : (
+    <div className="bg-panel border border-border rounded-xl shadow-card p-5 flex items-center justify-center text-slate-400">
+      Select or add a set to view details.
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -149,12 +297,20 @@ function App() {
               LEGO Set Ranking Dashboard
             </h1>
           </div>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 rounded-md bg-accent text-slate-900 font-semibold hover:bg-cyan-300 transition shadow-card"
-          >
-            + Add Set
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleImportClick}
+              className="px-4 py-2 rounded-md border border-border text-slate-100 hover:bg-slate-800 transition shadow-card"
+            >
+              Import XLSX
+            </button>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="px-4 py-2 rounded-md bg-accent text-slate-900 font-semibold hover:bg-cyan-300 transition shadow-card"
+            >
+              + Add Set
+            </button>
+          </div>
         </header>
 
         <div className="bg-panel border border-border rounded-xl shadow-card p-4">
@@ -171,15 +327,10 @@ function App() {
             onSelect={setSelectedId}
             sortBy={sortBy}
             onSortChange={setSortBy}
+            onDelete={(set) => setDeleteTarget(set)}
           />
 
-          {selectedSet ? (
-            <SetDetail set={selectedSet} onChange={handleUpdateSet} />
-          ) : (
-            <div className="bg-panel border border-border rounded-xl shadow-card p-5 flex items-center justify-center text-slate-400">
-              Select or add a set to view details.
-            </div>
-          )}
+          {detailContent}
         </div>
       </div>
 
@@ -187,7 +338,30 @@ function App() {
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddSet}
+        onUpload={handleImportClick}
         existingIds={sets.map((set) => set.setId)}
+      />
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete this set?"
+        message="This cannot be undone."
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => handleDeleteSet(deleteTarget?.setId)}
+      />
+
+      <ImportSummaryModal
+        open={!!importSummary}
+        summary={importSummary}
+        onClose={() => setImportSummary(null)}
+      />
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        className="hidden"
+        onChange={handleFileChange}
       />
     </div>
   );

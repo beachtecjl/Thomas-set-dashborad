@@ -16,7 +16,7 @@ const rankLabels = {
 
 const rankKeys = ['rankA', 'rankB', 'rankC', 'rankD'];
 
-const SetDetail = ({ set, onChange }) => {
+const SetDetail = ({ set, onChange, onDelete }) => {
   const metrics = useMemo(() => {
     const delta = set.currentPrice - set.purchasePrice;
     const roi =
@@ -42,9 +42,20 @@ const SetDetail = ({ set, onChange }) => {
           alt={set.name}
           className="w-40 h-40 object-contain rounded-lg border border-border bg-slate-900"
         />
-        <div className="flex flex-col gap-2">
-          <h2 className="text-xl font-semibold text-slate-50">{set.name}</h2>
-          <p className="text-slate-300">{set.setId}</p>
+        <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-50">{set.name || 'Untitled set'}</h2>
+              <p className="text-slate-300">{set.setId}</p>
+            </div>
+            <button
+              onClick={onDelete}
+              className="px-3 py-1.5 rounded-md border border-rose-500 text-rose-200 hover:bg-rose-500/10 text-sm inline-flex items-center gap-2"
+            >
+              <span aria-hidden="true">🗑️</span>
+              <span>Delete</span>
+            </button>
+          </div>
           <div className="flex gap-2 flex-wrap">
             <a
               href={`https://www.bricklink.com/v2/catalog/catalogitem.page?S=${set.setId}`}
