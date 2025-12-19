@@ -13,6 +13,7 @@ Client-side LEGO investment tracker built with **React**, **Vite**, and **Tailwi
 - Add new sets (ID-only required, with live BrickLink preview and validation).
 - Delete sets from the table or detail panel (with confirmation).
 - XLSX import (SheetJS) with duplicate skipping and summary modal.
+- Add new sets (validates ID format and prevents duplicates).
 - Local persistence via `localStorage` plus starter data in `src/data/seedSets.js`.
 
 ## Getting Started
