@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 
 const initialForm = {
   setId: '',
@@ -7,46 +7,28 @@ const initialForm = {
   year: '',
 };
 
-const AddSetModal = ({ open, onClose, onAdd, onUpload, existingIds }) => {
+const AddSetModal = ({ open, onClose, onAdd, existingIds }) => {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
-  const [imageStatus, setImageStatus] = useState('idle');
 
   const reset = () => {
     setForm(initialForm);
     setError('');
-    setImageStatus('idle');
   };
-
-  const trimmedSetId = form.setId.trim();
-  const validSetId = /^\d{4,7}-\d+$/.test(trimmedSetId);
-  const isDuplicate = existingIds.includes(trimmedSetId);
-  const canSubmit = validSetId && !isDuplicate;
-  const previewUrl = useMemo(
-    () => (trimmedSetId ? `https://img.bricklink.com/ItemImage/SN/0/${trimmedSetId}.png` : ''),
-    [trimmedSetId]
-  );
-
-  useEffect(() => {
-    if (!trimmedSetId) {
-      setImageStatus('idle');
-      return;
-    }
-    setImageStatus('loading');
-  }, [trimmedSetId]);
-
-  useEffect(() => {
-    setError('');
-  }, [trimmedSetId, form.name, form.theme, form.year]);
 
   const handleAdd = (e) => {
     e.preventDefault();
-    const setId = trimmedSetId;
-    if (!validSetId) {
-      setError('Set ID must match ####-# (4-7 digits, dash, digits).');
+    const setId = form.setId.trim();
+    const name = form.name.trim();
+    if (!setId || !name) {
+      setError('Set ID and Name are required.');
       return;
     }
-    if (isDuplicate) {
+    if (!setId.includes('-')) {
+      setError('Set ID must contain a dash (e.g., 75263-1).');
+      return;
+    }
+    if (existingIds.includes(setId)) {
       setError('This Set ID already exists.');
       return;
     }
@@ -54,8 +36,8 @@ const AddSetModal = ({ open, onClose, onAdd, onUpload, existingIds }) => {
     const cleanYear = form.year === '' ? null : Number(form.year);
     onAdd({
       setId,
-      name: form.name.trim(),
-      theme: form.theme.trim(),
+      name,
+      theme: form.theme.trim() || '',
       year: Number.isNaN(cleanYear) ? null : cleanYear,
     });
     reset();
@@ -83,7 +65,7 @@ const AddSetModal = ({ open, onClose, onAdd, onUpload, existingIds }) => {
         <form onSubmit={handleAdd} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="flex flex-col gap-2">
-              <span className="text-sm text-slate-300">Set ID (required)</span>
+              <span className="text-sm text-slate-300">Set ID</span>
               <input
                 type="text"
                 value={form.setId}
@@ -92,7 +74,7 @@ const AddSetModal = ({ open, onClose, onAdd, onUpload, existingIds }) => {
               />
             </label>
             <label className="flex flex-col gap-2">
-              <span className="text-sm text-slate-300">Name (optional)</span>
+              <span className="text-sm text-slate-300">Name</span>
               <input
                 type="text"
                 value={form.name}
@@ -121,63 +103,21 @@ const AddSetModal = ({ open, onClose, onAdd, onUpload, existingIds }) => {
               />
             </label>
           </div>
-          <p className="text-sm text-slate-400">
-            Only Set ID is required. Name, Theme, and Year are optional and can be edited later.
-          </p>
-          <div className="bg-slate-900/60 border border-border rounded-lg p-3 flex items-center gap-3">
-            <div className="h-24 w-24 border border-border rounded-md bg-slate-900 flex items-center justify-center overflow-hidden">
-              {trimmedSetId && previewUrl ? (
-                <img
-                  key={previewUrl}
-                  src={previewUrl}
-                  alt="Preview"
-                  className="h-full w-full object-contain"
-                  onLoad={() => setImageStatus('success')}
-                  onError={() => setImageStatus('error')}
-                />
-              ) : (
-                <div className="h-full w-full animate-pulse bg-slate-800" />
-              )}
-            </div>
-            <div className="flex-1 text-sm text-slate-300">
-              <p className="font-semibold text-slate-100 mb-1">Live BrickLink preview</p>
-              {imageStatus === 'loading' && <p>Loading preview...</p>}
-              {imageStatus === 'success' && <p>Image found for this Set ID.</p>}
-              {imageStatus === 'error' && (
-                <p className="text-rose-300">No image found (check Set ID).</p>
-              )}
-              {imageStatus === 'idle' && <p>Enter a Set ID to see its image.</p>}
-            </div>
-          </div>
           {error && <p className="text-rose-300 text-sm">{error}</p>}
-          <div className="flex flex-wrap justify-between gap-3">
+          <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => onUpload?.()}
+              onClick={onCloseModal}
               className="px-4 py-2 rounded-md border border-border text-slate-200 hover:bg-slate-800"
             >
-              Upload XLSX
+              Cancel
             </button>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onCloseModal}
-                className="px-4 py-2 rounded-md border border-border text-slate-200 hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className={`px-4 py-2 rounded-md font-semibold ${
-                  canSubmit
-                    ? 'bg-accent text-slate-900 hover:bg-cyan-300'
-                    : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                Add Set
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-md bg-accent text-slate-900 font-semibold hover:bg-cyan-300"
+            >
+              Add Set
+            </button>
           </div>
         </form>
       </div>
