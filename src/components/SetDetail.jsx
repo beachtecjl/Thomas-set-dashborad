@@ -17,6 +17,7 @@ const rankLabels = {
 const rankKeys = ['rankA', 'rankB', 'rankC', 'rankD'];
 
 const SetDetail = ({ set, onChange, onDelete }) => {
+const SetDetail = ({ set, onChange }) => {
   const metrics = useMemo(() => {
     const delta = set.currentPrice - set.purchasePrice;
     const roi =
@@ -55,6 +56,9 @@ const SetDetail = ({ set, onChange, onDelete }) => {
               Delete
             </button>
           </div>
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl font-semibold text-slate-50">{set.name}</h2>
+          <p className="text-slate-300">{set.setId}</p>
           <div className="flex gap-2 flex-wrap">
             <a
               href={`https://www.bricklink.com/v2/catalog/catalogitem.page?S=${set.setId}`}

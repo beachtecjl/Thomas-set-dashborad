@@ -284,6 +284,12 @@ function App() {
               + Add Set
             </button>
           </div>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2 rounded-md bg-accent text-slate-900 font-semibold hover:bg-cyan-300 transition shadow-card"
+          >
+            + Add Set
+          </button>
         </header>
 
         <div className="bg-panel border border-border rounded-xl shadow-card p-4">
@@ -309,6 +315,10 @@ function App() {
               onChange={handleUpdateSet}
               onDelete={() => setDeleteTarget(selectedSet)}
             />
+          />
+
+          {selectedSet ? (
+            <SetDetail set={selectedSet} onChange={handleUpdateSet} />
           ) : (
             <div className="bg-panel border border-border rounded-xl shadow-card p-5 flex items-center justify-center text-slate-400">
               Select or add a set to view details.

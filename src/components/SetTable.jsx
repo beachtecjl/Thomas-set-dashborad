@@ -15,6 +15,7 @@ const formatRoi = (value) =>
     : '—';
 
 const SetTable = ({ sets, selectedId, onSelect, sortBy, onSortChange, onDelete }) => {
+const SetTable = ({ sets, selectedId, onSelect, sortBy, onSortChange }) => {
   return (
     <div className="bg-panel border border-border rounded-xl shadow-card p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">

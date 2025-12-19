@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 
 const initialForm = {
   setId: '',
@@ -47,6 +48,21 @@ const AddSetModal = ({ open, onClose, onAdd, existingIds }) => {
       return;
     }
     if (isDuplicate) {
+  };
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    const setId = form.setId.trim();
+    const name = form.name.trim();
+    if (!setId || !name) {
+      setError('Set ID and Name are required.');
+      return;
+    }
+    if (!setId.includes('-')) {
+      setError('Set ID must contain a dash (e.g., 75263-1).');
+      return;
+    }
+    if (existingIds.includes(setId)) {
       setError('This Set ID already exists.');
       return;
     }
@@ -56,6 +72,8 @@ const AddSetModal = ({ open, onClose, onAdd, existingIds }) => {
       setId,
       name: form.name.trim(),
       theme: form.theme.trim(),
+      name,
+      theme: form.theme.trim() || '',
       year: Number.isNaN(cleanYear) ? null : cleanYear,
     });
     reset();
@@ -84,6 +102,7 @@ const AddSetModal = ({ open, onClose, onAdd, existingIds }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="flex flex-col gap-2">
               <span className="text-sm text-slate-300">Set ID (required)</span>
+              <span className="text-sm text-slate-300">Set ID</span>
               <input
                 type="text"
                 value={form.setId}
@@ -93,6 +112,7 @@ const AddSetModal = ({ open, onClose, onAdd, existingIds }) => {
             </label>
             <label className="flex flex-col gap-2">
               <span className="text-sm text-slate-300">Name (optional)</span>
+              <span className="text-sm text-slate-300">Name</span>
               <input
                 type="text"
                 value={form.name}
@@ -166,6 +186,7 @@ const AddSetModal = ({ open, onClose, onAdd, existingIds }) => {
                   ? 'bg-accent text-slate-900 hover:bg-cyan-300'
                   : 'bg-slate-700 text-slate-400 cursor-not-allowed'
               }`}
+              className="px-4 py-2 rounded-md bg-accent text-slate-900 font-semibold hover:bg-cyan-300"
             >
               Add Set
             </button>
