@@ -14,7 +14,6 @@ const formatRoi = (value) =>
     ? `${value.toFixed(1)}%`
     : '—';
 
-const SetTable = ({ sets, selectedId, onSelect, sortBy, onSortChange, onDelete }) => {
 const SetTable = ({ sets, selectedId, onSelect, sortBy, onSortChange }) => {
   return (
     <div className="bg-panel border border-border rounded-xl shadow-card p-4 h-full flex flex-col">
@@ -43,7 +42,6 @@ const SetTable = ({ sets, selectedId, onSelect, sortBy, onSortChange }) => {
               <th className="px-3 py-2 font-semibold text-center">Purchase Price</th>
               <th className="px-3 py-2 font-semibold text-center">Delta</th>
               <th className="px-3 py-2 font-semibold text-center">ROI %</th>
-              <th className="px-3 py-2 font-semibold text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -89,17 +87,6 @@ const SetTable = ({ sets, selectedId, onSelect, sortBy, onSortChange }) => {
                     {formatCurrency(delta)}
                   </td>
                   <td className="px-3 py-2 text-center">{formatRoi(roi)}</td>
-                  <td className="px-3 py-2 text-center">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete?.(set);
-                      }}
-                      className="text-rose-300 hover:text-rose-200 text-sm underline-offset-2 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </td>
                 </tr>
               );
             })}
